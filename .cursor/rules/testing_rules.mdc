@@ -1,0 +1,4 @@
+# Rule: Testing Enforcement
+- Each tool has its own test file in /tests/<tool_name>/
+- Tests cover only that tool's functionality.
+- Do not mix tests across multiple tools.

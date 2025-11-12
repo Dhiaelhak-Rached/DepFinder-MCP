@@ -1,0 +1,13 @@
+---
+alwaysApply: true
+---
+
+# Rule: Strict MCP Architecture
+- For each MCP tool, create files only inside its designated folder:
+  - get_language_info -> /mcp/tools/get_language_info/
+  - get_dependencies -> /mcp/tools/get_dependencies/
+  - search_compatible_versions -> /mcp/tools/search_compatible_versions/
+  - generate_requirements -> /mcp/tools/generate_requirements/
+  - verify_compatibility -> /mcp/tools/verify_compatibility/
+- Do not mix unrelated tools in the same folder.
+- If uncertain, prompt before creating.

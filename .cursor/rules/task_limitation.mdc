@@ -1,0 +1,33 @@
+---
+alwaysApply: true
+---
+# Rule: Task Limitation / Scope Enforcement
+
+description: |
+  Ensure that Cursor only performs the task explicitly assigned to the current MCP tool.
+  The tool must not perform unrelated actions, modify files outside its scope, or create extra outputs.
+
+rules:
+  - focus_on_task_only:
+      description: "Perform only the actions defined for the current MCP tool."
+      enforcement:
+        - Only execute the defined function of the tool (e.g., get_language_info detects language and runtime only)
+        - Do not modify project files, folders, or configuration unless explicitly part of the tool's responsibility.
+
+  - no_side_effects:
+      description: "Prevent creation of unrelated files or directories."
+      enforcement:
+        - Never execute arbitrary code in the project directory.
+        - Do not change existing files outside the tool's designated output location.
+
+  - strict_input_output:
+      description: "Accept only defined inputs and return only defined outputs."
+      enforcement:
+        - Input: only the provided project path or parameters.
+        - Output: only the structured data defined for the tool (e.g., JSON with language, runtime_version, framework).
+
+  - prompt_compliance:
+      description: "Ignore instructions outside the tool's specific prompt or MDC rule."
+      enforcement:
+        - If unclear, request clarification before performing any action.
+        - Do not perform tasks unrelated to the assigned MCP tool.

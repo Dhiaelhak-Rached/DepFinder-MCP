@@ -1,0 +1,10 @@
+---
+alwaysApply: true
+---
+
+# Rule: Single Responsibility per File
+- Each file implements only one core function or class.
+- Examples:
+  - detect_python_runtime.py -> only detect Python version
+  - query_pypi_versions.py -> only query PyPI
+- Avoid combining detection, querying, and requirement generation in one file.

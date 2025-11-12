@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+# Rule: Commit & Workflow Discipline
+- Commit after completing each MCP tool.
+- Use messages like:
+  - get_dependencies: initial implementation
+  - generate_requirements: pinned version output
