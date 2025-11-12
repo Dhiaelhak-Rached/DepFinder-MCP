@@ -52,7 +52,13 @@ async function testGetLanguageInfo() {
     });
 
     console.log('PythonDetector Result:');
-    console.log(JSON.stringify(pythonDetectorResult, null, 2));
+    const pythonResultDisplay = {
+      language: pythonDetectorResult.language,
+      runtimeVersion: pythonDetectorResult.runtimeVersion || undefined,
+      framework: pythonDetectorResult.framework || undefined,
+      confidence: pythonDetectorResult.confidence
+    };
+    console.log(JSON.stringify(pythonResultDisplay, null, 2));
     console.log();
 
     // Test 3: Node.js project with getLanguageInfo function
@@ -74,7 +80,13 @@ async function testGetLanguageInfo() {
     });
 
     console.log('NodeJSDetector Result:');
-    console.log(JSON.stringify(nodeDetectorResult, null, 2));
+    const nodeResultDisplay = {
+      language: nodeDetectorResult.language,
+      runtimeVersion: nodeDetectorResult.runtimeVersion || undefined,
+      framework: nodeDetectorResult.framework || undefined,
+      confidence: nodeDetectorResult.confidence
+    };
+    console.log(JSON.stringify(nodeResultDisplay, null, 2));
     console.log();
 
     // Summary
@@ -82,20 +94,18 @@ async function testGetLanguageInfo() {
     console.log('Test Summary');
     console.log('='.repeat(60));
     
-    const pythonParsedResult = JSON.parse(pythonResult.content[0].text);
     console.log('Python Project:');
-    console.log(`  Language detected: ${pythonParsedResult.language}`);
-    console.log(`  Runtime version: ${pythonParsedResult.runtimeVersion || 'Not detected'}`);
-    console.log(`  Framework: ${pythonParsedResult.framework || 'Not detected'}`);
-    console.log(`  Confidence: ${pythonParsedResult.confidence}`);
+    console.log(`  Language detected: ${pythonDetectorResult.language}`);
+    console.log(`  Runtime version: ${pythonDetectorResult.runtimeVersion || 'Not detected'}`);
+    console.log(`  Framework: ${pythonDetectorResult.framework || 'Not detected'}`);
+    console.log(`  Confidence: ${pythonDetectorResult.confidence}`);
     console.log();
     
-    const nodeParsedResult = JSON.parse(nodeResult.content[0].text);
     console.log('Node.js Project:');
-    console.log(`  Language detected: ${nodeParsedResult.language}`);
-    console.log(`  Runtime version: ${nodeParsedResult.runtimeVersion || 'Not detected'}`);
-    console.log(`  Framework: ${nodeParsedResult.framework || 'Not detected'}`);
-    console.log(`  Confidence: ${nodeParsedResult.confidence}`);
+    console.log(`  Language detected: ${nodeDetectorResult.language}`);
+    console.log(`  Runtime version: ${nodeDetectorResult.runtimeVersion || 'Not detected'}`);
+    console.log(`  Framework: ${nodeDetectorResult.framework || 'Not detected'}`);
+    console.log(`  Confidence: ${nodeDetectorResult.confidence}`);
     console.log('='.repeat(60));
 
   } catch (error) {

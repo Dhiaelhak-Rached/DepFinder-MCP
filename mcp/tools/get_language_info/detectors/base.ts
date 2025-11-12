@@ -34,7 +34,7 @@ export abstract class BaseLanguageDetector implements ILanguageDetector {
     // Check cache first
     const cacheKey = this.generateCacheKey(projectPath, options);
     if (options.cacheEnabled !== false) {
-      const cachedResult = await getFromCache(cacheKey);
+      const cachedResult = await getFromCache<LanguageDetectionResult>(cacheKey);
       if (cachedResult) {
         return cachedResult;
       }
@@ -47,14 +47,12 @@ export abstract class BaseLanguageDetector implements ILanguageDetector {
     const extensionResults = await this.fileExtensionAnalyzer.analyze(projectPath, this.fileExtensions);
     if (extensionResults && extensionResults.length > 0) {
       // Find the best matching extension result for this language
-      const matchingResult = extensionResults.find(r => r.language === this.languageName) || extensionResults[0];
-      if (matchingResult && matchingResult.count > 0) {
-        evidence.push({
-          type: 'file-extension',
-          weight: 0.4,
-          details: matchingResult
-        });
-      }
+      const matchingExtension = extensionResults.find(r => r.language === this.languageName) || extensionResults[0];
+      evidence.push({
+        type: 'file-extension',
+        weight: 0.4,
+        details: matchingExtension
+      });
     }
 
     // Configuration file analysis
@@ -62,42 +60,35 @@ export abstract class BaseLanguageDetector implements ILanguageDetector {
     if (configResults && configResults.length > 0) {
       // Find the best matching config result for this language
       const matchingConfig = configResults.find(r => r.language === this.languageName) || configResults[0];
-      if (matchingConfig) {
-        evidence.push({
-          type: 'config-file',
-          weight: 0.7,
-          details: matchingConfig
-        });
-      }
+      evidence.push({
+        type: 'config-file',
+        weight: 0.7,
+        details: matchingConfig
+      });
     }
 
     // Source code analysis
     const sourceCodeResults = await this.sourceCodeAnalyzer.analyze(projectPath, this.frameworkPatterns);
     if (sourceCodeResults && sourceCodeResults.length > 0) {
       // Find the best matching source code result for this language
-      const matchingSource = sourceCodeResults.find(r => r.language === this.languageName) || sourceCodeResults[0];
-      if (matchingSource && matchingSource.patterns.length > 0) {
-        evidence.push({
-          type: 'source-code',
-          weight: 0.3,
-          details: matchingSource
-        });
-      }
+      const matchingSourceCode = sourceCodeResults.find(r => r.language === this.languageName) || sourceCodeResults[0];
+      evidence.push({
+        type: 'source-code',
+        weight: 0.3,
+        details: matchingSourceCode
+      });
     }
 
     // Calculate confidence score
     const confidence = ScoringUtils.calculateConfidenceScore(evidence);
     
-    // Extract version and framework information (reuse variables from above)
-    const bestConfig = configResults && configResults.length > 0 
-      ? configResults.find(r => r.language === this.languageName) || configResults[0]
-      : undefined;
-    const runtimeVersion = this.extractRuntimeVersion(bestConfig);
+    // Extract version and framework information
+    // Find the matching config result for this language
+    const matchingConfigResult = configResults?.find(r => r.language === this.languageName) || configResults?.[0];
+    const matchingSourceCodeResult = sourceCodeResults?.find(r => r.language === this.languageName) || sourceCodeResults?.[0];
     
-    const bestSourceCode = sourceCodeResults && sourceCodeResults.length > 0
-      ? sourceCodeResults.find(r => r.language === this.languageName) || sourceCodeResults[0]
-      : undefined;
-    const framework = await this.detectFramework(bestSourceCode, bestConfig);
+    const runtimeVersion = this.extractRuntimeVersion(matchingConfigResult);
+    const framework = await this.detectFramework(matchingSourceCodeResult, matchingConfigResult);
 
     const result: LanguageDetectionResult = {
       language: this.languageName,

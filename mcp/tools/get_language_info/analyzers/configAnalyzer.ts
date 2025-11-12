@@ -4,8 +4,7 @@ import { fileExists, readJsonFile, readTextFile } from '../../../utils/fileSyste
 /**
  * Configuration file analyzer for language detection
  */
-export class ConfigAnalyzer implements IAnalyzer<ConfigFileResult[]> {
-  /**
+export class ConfigAnalyzer implements IAnalyzer<ConfigFileResult[]> {  /**
    * Analyze configuration files in project directory
    * @param projectPath Path to the project directory
    * @param targetFiles Array of configuration files to look for
@@ -708,3 +707,4 @@ export class ConfigAnalyzer implements IAnalyzer<ConfigFileResult[]> {
     return dependencies;
   }
 }
+

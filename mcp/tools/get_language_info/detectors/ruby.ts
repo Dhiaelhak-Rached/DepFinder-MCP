@@ -2,6 +2,7 @@ import { BaseLanguageDetector } from './base.js';
 import { LanguageDetectionResult, DetectionOptions } from '../types.js';
 import { FileUtils } from '../utils/fileUtils.js';
 import { VersionUtils } from '../utils/versionUtils.js';
+import { fileExists } from '../../../utils/fileSystem.js';
 
 /**
  * Ruby language detector
@@ -160,7 +161,7 @@ export class RubyDetector extends BaseLanguageDetector {
     try {
       // Check for .ruby-version file in RVM environment
       const rvmPath = `${projectPath}/.ruby-version`;
-      if (await FileUtils.fileExists(rvmPath)) {
+    if (await fileExists(rvmPath)) {
         const content = await FileUtils.safeReadFile(rvmPath);
         if (content) {
           return content.trim();
@@ -198,7 +199,7 @@ export class RubyDetector extends BaseLanguageDetector {
     try {
       // Check for .ruby-version file in rbenv environment
       const rbenvPath = `${projectPath}/.ruby-version`;
-      if (await FileUtils.fileExists(rbenvPath)) {
+    if (await fileExists(rbenvPath)) {
         const content = await FileUtils.safeReadFile(rbenvPath);
         if (content) {
           return content.trim();

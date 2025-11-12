@@ -1,5 +1,4 @@
-import { BaseLanguageDetector } from './base.js';
-import { LanguageDetectionResult, DetectionOptions } from '../types.js';
+import { BaseLanguageDetector } from './base.js';import { LanguageDetectionResult, DetectionOptions } from '../types.js';
 import { FileUtils } from '../utils/fileUtils.js';
 import { VersionUtils } from '../utils/versionUtils.js';
 
@@ -58,6 +57,7 @@ export class PythonDetector extends BaseLanguageDetector {
    * @returns Runtime version string or undefined
    */
   protected extractRuntimeVersion(configResult: any): string | undefined {
+    if (!configResult) return undefined;
     // Check for version in .python-version file
     if (configResult.filePath && configResult.filePath.endsWith('.python-version')) {
       return configResult.version;
@@ -237,3 +237,4 @@ export class PythonDetector extends BaseLanguageDetector {
     return null;
   }
 }
+
