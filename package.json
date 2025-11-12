@@ -9,14 +9,18 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
+    "dev": "tsx src/index.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "eslint mcp/**/*.ts tests/**/*.ts --fix",
     "format": "prettier --write mcp/**/*.ts tests/**/*.ts"
   },
-  "keywords": ["mcp", "dependency", "finder"],
+  "keywords": [
+    "mcp",
+    "dependency",
+    "finder"
+  ],
   "author": "",
   "license": "ISC",
   "description": "MCP server for finding and managing project dependencies",
@@ -33,6 +37,7 @@
     "prettier": "^3.6.2",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }
 }

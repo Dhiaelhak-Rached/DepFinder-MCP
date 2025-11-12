@@ -128,28 +128,78 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
+  // Validate args is defined
+  if (!args) {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({ error: 'Missing arguments' }, null, 2),
+        },
+      ],
+    };
+  }
+
   try {
     switch (name) {
-      case 'get_language_info':
+      case 'get_language_info': {
         // Import and call the tool implementation
-        const { getLanguageInfo } = await import('../mcp/tools/get_language_info');
-        return await getLanguageInfo(args.projectPath);
+        const { getLanguageInfo } = await import('../mcp/tools/get_language_info/index.js');
+        const projectPath = typeof args.projectPath === 'string' ? args.projectPath : '';
+        if (!projectPath) {
+          throw new Error('projectPath is required');
+        }
+        return await getLanguageInfo(projectPath);
+      }
 
-      case 'get_dependencies':
-        const { getDependencies } = await import('../mcp/tools/get_dependencies');
-        return await getDependencies(args.projectPath);
+      case 'get_dependencies': {
+        const { getDependencies } = await import('../mcp/tools/get_dependencies/index.js');
+        const projectPath = typeof args.projectPath === 'string' ? args.projectPath : '';
+        if (!projectPath) {
+          throw new Error('projectPath is required');
+        }
+        return await getDependencies(projectPath);
+      }
 
-      case 'search_compatible_versions':
-        const { searchCompatibleVersions } = await import('../mcp/tools/search_compatible_versions');
-        return await searchCompatibleVersions(args.packageName, args.currentVersion, args.language);
+      case 'search_compatible_versions': {
+        const { searchCompatibleVersions } = await import('../mcp/tools/search_compatible_versions/index.js');
+        const packageName = typeof args.packageName === 'string' ? args.packageName : '';
+        const currentVersion = typeof args.currentVersion === 'string' ? args.currentVersion : undefined;
+        const language = typeof args.language === 'string' ? args.language : '';
+        if (!packageName || !language) {
+          throw new Error('packageName and language are required');
+        }
+        return await searchCompatibleVersions(packageName, currentVersion, language);
+      }
 
-      case 'generate_requirements':
-        const { generateRequirements } = await import('../mcp/tools/generate_requirements');
-        return await generateRequirements(args.projectPath, args.outputPath);
+      case 'generate_requirements': {
+        const { generateRequirements } = await import('../mcp/tools/generate_requirements/index.js');
+        const projectPath = typeof args.projectPath === 'string' ? args.projectPath : '';
+        const outputPath = typeof args.outputPath === 'string' ? args.outputPath : undefined;
+        if (!projectPath) {
+          throw new Error('projectPath is required');
+        }
+        return await generateRequirements(projectPath, outputPath);
+      }
 
-      case 'verify_compatibility':
-        const { verifyCompatibility } = await import('../mcp/tools/verify_compatibility');
-        return await verifyCompatibility(args.dependencies, args.language);
+      case 'verify_compatibility': {
+        const { verifyCompatibility } = await import('../mcp/tools/verify_compatibility/index.js');
+        const dependencies = Array.isArray(args.dependencies) 
+          ? args.dependencies.filter((dep: unknown): dep is { name: string; version: string } => 
+              typeof dep === 'object' && 
+              dep !== null && 
+              'name' in dep && 
+              'version' in dep &&
+              typeof (dep as { name: unknown }).name === 'string' &&
+              typeof (dep as { version: unknown }).version === 'string'
+            )
+          : [];
+        const language = typeof args.language === 'string' ? args.language : '';
+        if (!dependencies.length || !language) {
+          throw new Error('dependencies and language are required');
+        }
+        return await verifyCompatibility(dependencies, language);
+      }
 
       default:
         throw new Error(`Unknown tool: ${name}`);
@@ -160,7 +210,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       content: [
         {
           type: 'text',
-          text: `Error: ${errorMessage}`,
+          text: JSON.stringify({ error: errorMessage }, null, 2),
         },
       ],
     };
