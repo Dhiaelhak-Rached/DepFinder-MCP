@@ -1,12 +1,10 @@
 import { getLanguageInfo } from '../mcp/tools/get_language_info/index.js';
-import { PythonDetector } from '../mcp/tools/get_language_info/detectors/python.js';
-import { NodeJSDetector } from '../mcp/tools/get_language_info/detectors/nodejs.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 /**
  * Test script for get_language_info tool
- * Tests Python and Node.js language detection functionality
+ * Tests Python and Node.js language detection functionality using the tool's entry point
  */
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,61 +30,45 @@ async function testGetLanguageInfo() {
     'nodetesting'
   );
 
+  // Path to the Ruby testing project
+  const rubyProjectPath = path.join(
+    __dirname,
+    'get_language_info_testing',
+    'rubytesting'
+  );
+
   try {
-    // Test 1: Python project with getLanguageInfo function
-    console.log('Test 1: Python project with getLanguageInfo function');
+    // Test 1: Python project
+    console.log('Test 1: Python project');
     console.log('-'.repeat(60));
     console.log(`Testing project path: ${pythonProjectPath}`);
     const pythonResult = await getLanguageInfo(pythonProjectPath);
+    const pythonData = JSON.parse(pythonResult.content[0].text);
     
     console.log('Result:');
-    console.log(JSON.stringify(JSON.parse(pythonResult.content[0].text), null, 2));
+    console.log(JSON.stringify(pythonData, null, 2));
     console.log();
 
-    // Test 2: Python project with PythonDetector directly
-    console.log('Test 2: Python project with PythonDetector directly');
-    console.log('-'.repeat(60));
-    const pythonDetector = new PythonDetector();
-    const pythonDetectorResult = await pythonDetector.detect(pythonProjectPath, {
-      cacheEnabled: false,
-    });
-
-    console.log('PythonDetector Result:');
-    const pythonResultDisplay = {
-      language: pythonDetectorResult.language,
-      runtimeVersion: pythonDetectorResult.runtimeVersion || undefined,
-      framework: pythonDetectorResult.framework || undefined,
-      confidence: pythonDetectorResult.confidence
-    };
-    console.log(JSON.stringify(pythonResultDisplay, null, 2));
-    console.log();
-
-    // Test 3: Node.js project with getLanguageInfo function
-    console.log('Test 3: Node.js project with getLanguageInfo function');
+    // Test 2: Node.js project
+    console.log('Test 2: Node.js project');
     console.log('-'.repeat(60));
     console.log(`Testing project path: ${nodeProjectPath}`);
     const nodeResult = await getLanguageInfo(nodeProjectPath);
+    const nodeData = JSON.parse(nodeResult.content[0].text);
     
     console.log('Result:');
-    console.log(JSON.stringify(JSON.parse(nodeResult.content[0].text), null, 2));
+    console.log(JSON.stringify(nodeData, null, 2));
     console.log();
 
-    // Test 4: Node.js project with NodeJSDetector directly
-    console.log('Test 4: Node.js project with NodeJSDetector directly');
+    // Test 3: Ruby project
+    console.log('Test 3: Ruby project');
     console.log('-'.repeat(60));
-    const nodeDetector = new NodeJSDetector();
-    const nodeDetectorResult = await nodeDetector.detect(nodeProjectPath, {
-      cacheEnabled: false,
-    });
-
-    console.log('NodeJSDetector Result:');
-    const nodeResultDisplay = {
-      language: nodeDetectorResult.language,
-      runtimeVersion: nodeDetectorResult.runtimeVersion || undefined,
-      framework: nodeDetectorResult.framework || undefined,
-      confidence: nodeDetectorResult.confidence
-    };
-    console.log(JSON.stringify(nodeResultDisplay, null, 2));
+    console.log(`Testing project path: ${rubyProjectPath}`);
+    const rubyResult = await getLanguageInfo(rubyProjectPath);
+    const rubyData = JSON.parse(rubyResult.content[0].text);
+    
+    console.log('Result:');
+    console.log(JSON.stringify(rubyData, null, 2));
     console.log();
 
     // Summary
@@ -95,17 +77,24 @@ async function testGetLanguageInfo() {
     console.log('='.repeat(60));
     
     console.log('Python Project:');
-    console.log(`  Language detected: ${pythonDetectorResult.language}`);
-    console.log(`  Runtime version: ${pythonDetectorResult.runtimeVersion || 'Not detected'}`);
-    console.log(`  Framework: ${pythonDetectorResult.framework || 'Not detected'}`);
-    console.log(`  Confidence: ${pythonDetectorResult.confidence}`);
+    console.log(`  Language detected: ${pythonData.language || 'Not detected'}`);
+    console.log(`  Runtime version: ${pythonData.runtimeVersion || 'Not detected'}`);
+    console.log(`  Framework: ${pythonData.framework || 'Not detected'}`);
+    console.log(`  Confidence: ${pythonData.confidence || 0}`);
     console.log();
     
     console.log('Node.js Project:');
-    console.log(`  Language detected: ${nodeDetectorResult.language}`);
-    console.log(`  Runtime version: ${nodeDetectorResult.runtimeVersion || 'Not detected'}`);
-    console.log(`  Framework: ${nodeDetectorResult.framework || 'Not detected'}`);
-    console.log(`  Confidence: ${nodeDetectorResult.confidence}`);
+    console.log(`  Language detected: ${nodeData.language || 'Not detected'}`);
+    console.log(`  Runtime version: ${nodeData.runtimeVersion || 'Not detected'}`);
+    console.log(`  Framework: ${nodeData.framework || 'Not detected'}`);
+    console.log(`  Confidence: ${nodeData.confidence || 0}`);
+    console.log();
+    
+    console.log('Ruby Project:');
+    console.log(`  Language detected: ${rubyData.language || 'Not detected'}`);
+    console.log(`  Runtime version: ${rubyData.runtimeVersion || 'Not detected'}`);
+    console.log(`  Framework: ${rubyData.framework || 'Not detected'}`);
+    console.log(`  Confidence: ${rubyData.confidence || 0}`);
     console.log('='.repeat(60));
 
   } catch (error) {

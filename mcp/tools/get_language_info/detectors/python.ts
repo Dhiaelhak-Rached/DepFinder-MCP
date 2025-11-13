@@ -1,6 +1,8 @@
-import { BaseLanguageDetector } from './base.js';import { LanguageDetectionResult, DetectionOptions } from '../types.js';
+import { BaseLanguageDetector } from './base.js';
+import { LanguageDetectionResult, DetectionOptions } from '../types.js';
 import { FileUtils } from '../utils/fileUtils.js';
 import { VersionUtils } from '../utils/versionUtils.js';
+import { fileExists } from '../../../utils/fileSystem.js';
 
 /**
  * Python language detector
@@ -58,26 +60,20 @@ export class PythonDetector extends BaseLanguageDetector {
    */
   protected extractRuntimeVersion(configResult: any): string | undefined {
     if (!configResult) return undefined;
-    // Check for version in .python-version file
-    if (configResult.filePath && configResult.filePath.endsWith('.python-version')) {
+    
+    // First, check if version is directly available in the config result
+    // (This handles cases where the config analyzer already extracted it from
+    // requirements.txt, .python-version, pyproject.toml, setup.py, etc.)
+    if (configResult.version) {
+      // For Pipfile, the version might be in a specific format that needs parsing
+      if (configResult.filePath && configResult.filePath.endsWith('Pipfile')) {
+        // Extract version from python directive format: python = "3.11"
+        const versionMatch = configResult.version.match(/python\s*=\s*["']([^"']+)["']/);
+        if (versionMatch) {
+          return versionMatch[1];
+        }
+      }
       return configResult.version;
-    }
-
-    // Check for version in pyproject.toml
-    if (configResult.filePath && configResult.filePath.endsWith('pyproject.toml')) {
-      return configResult.version;
-    }
-
-    // Check for version in setup.py
-    if (configResult.filePath && configResult.filePath.endsWith('setup.py')) {
-      return configResult.version;
-    }
-
-    // Check for version in Pipfile
-    if (configResult.filePath && configResult.filePath.endsWith('Pipfile')) {
-      // Extract version from python directive
-      const versionMatch = configResult.version?.match(/python\s+["']([^"']+)["']/);
-      return versionMatch ? versionMatch[1] : undefined;
     }
 
     return undefined;
@@ -124,16 +120,34 @@ export class PythonDetector extends BaseLanguageDetector {
     // Call parent class detect method
     const result = await super.detect(projectPath, options);
     
-    // If confidence is below threshold, try additional detection methods
-    if (result.confidence < (options.confidenceThreshold || 0.3)) {
+    // Always try to detect runtime version from virtual environment if not already set
+    // This is important even when confidence is high, as config files might not contain version info
+    if (!result.runtimeVersion) {
       // Try to detect Python from virtual environment
+      const venvVersion = await this.detectFromVirtualEnvironment(projectPath);
+      if (venvVersion) {
+        result.runtimeVersion = venvVersion;
+      }
+
+      // If still no version, try to detect from shebang lines
+      if (!result.runtimeVersion) {
+        const shebangVersion = await this.detectFromShebang(projectPath);
+        if (shebangVersion) {
+          result.runtimeVersion = shebangVersion;
+        }
+      }
+    }
+    
+    // If confidence is below threshold, try additional detection methods to boost confidence
+    if (result.confidence < (options.confidenceThreshold || 0.3)) {
+      // Try to detect Python from virtual environment to boost confidence
       const venvVersion = await this.detectFromVirtualEnvironment(projectPath);
       if (venvVersion) {
         result.runtimeVersion = venvVersion;
         result.confidence = Math.max(result.confidence, 0.4);
       }
 
-      // Try to detect from shebang lines
+      // Try to detect from shebang lines to boost confidence
       const shebangVersion = await this.detectFromShebang(projectPath);
       if (shebangVersion) {
         result.runtimeVersion = shebangVersion;
@@ -150,29 +164,40 @@ export class PythonDetector extends BaseLanguageDetector {
    * @returns Python version string or null
    */
   private async detectFromVirtualEnvironment(projectPath: string): Promise<string | null> {
-    // Check for venv
-    const venvPath = `${projectPath}/venv`;
-    if (await FileUtils.directoryExistsInProject(projectPath, 'venv')) {
-      const pyvenvCfgPath = `${venvPath}/pyvenv.cfg`;
-      if (await FileUtils.fileExists(pyvenvCfgPath)) {
-        try {
-          const content = await FileUtils.safeReadFile(pyvenvCfgPath);
-          if (content) {
-            const versionMatch = content.match(/version\s*=\s*([0-9.]+)/);
-            return versionMatch ? versionMatch[1] : null;
+    // Common virtual environment directory names
+    const venvDirs = ['venv', '.venv', 'env', '.env', 'virtualenv', '.virtualenv'];
+    
+    for (const venvDir of venvDirs) {
+      if (await FileUtils.directoryExistsInProject(projectPath, venvDir)) {
+        const pyvenvCfgPath = FileUtils.joinPath(projectPath, venvDir, 'pyvenv.cfg');
+        if (await fileExists(pyvenvCfgPath)) {
+          try {
+            const content = await FileUtils.safeReadFile(pyvenvCfgPath);
+            if (content) {
+              // Try version_info first (modern format: version_info = 3.13.3.final.0)
+              let versionMatch = content.match(/version_info\s*=\s*([0-9.]+)/);
+              if (versionMatch) {
+                return versionMatch[1];
+              }
+              // Fallback to version (older format: version = 3.13.3)
+              versionMatch = content.match(/version\s*=\s*([0-9.]+)/);
+              if (versionMatch) {
+                return versionMatch[1];
+              }
+            }
+          } catch (error) {
+            console.error(`Error reading pyvenv.cfg from ${venvDir}:`, error);
           }
-        } catch (error) {
-          console.error('Error reading pyvenv.cfg:', error);
         }
       }
     }
 
-    // Check for virtualenv
-    const virtualenvPath = `${projectPath}/.virtualenv`;
+    // Check for virtualenv activation scripts (for older virtualenv setups)
+    // Note: .virtualenv is already checked in the loop above, but this handles activation scripts
     if (await FileUtils.directoryExistsInProject(projectPath, '.virtualenv')) {
       // Try to find version in activation scripts
-      const activateScriptPath = `${virtualenvPath}/bin/activate`;
-      if (await FileUtils.fileExists(activateScriptPath)) {
+      const activateScriptPath = FileUtils.joinPath(projectPath, '.virtualenv', 'bin', 'activate');
+      if (await fileExists(activateScriptPath)) {
         try {
           const content = await FileUtils.safeReadFile(activateScriptPath);
           if (content) {
@@ -186,15 +211,15 @@ export class PythonDetector extends BaseLanguageDetector {
     }
 
     // Check for conda environment
-    const condaMetaPath = `${projectPath}/.conda/meta`;
     if (await FileUtils.directoryExistsInProject(projectPath, '.conda')) {
       // Try to find version in environment files
       const envFiles = ['environment.yml', 'environment.yaml', 'conda.yml', 'conda.yaml'];
       
       for (const file of envFiles) {
-        if (await FileUtils.fileExistsInProject('', file)) {
+        if (await FileUtils.fileExistsInProject(projectPath, file)) {
           try {
-            const content = await FileUtils.safeReadFile(`${projectPath}/${file}`);
+            const envFilePath = FileUtils.joinPath(projectPath, file);
+            const content = await FileUtils.safeReadFile(envFilePath);
             if (content) {
               const versionMatch = content.match(/python_version:\s*["']?([^"'\s]+)/);
               if (versionMatch) {

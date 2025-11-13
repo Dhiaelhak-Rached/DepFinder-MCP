@@ -70,16 +70,13 @@ export class RubyDetector extends BaseLanguageDetector {
    * @returns Runtime version string or undefined
    */
   protected extractRuntimeVersion(configResult: any): string | undefined {
-    // Check for version in .ruby-version file
-    if (configResult && configResult.version) {
+    if (!configResult) return undefined;
+    
+    // First, check if version is directly available in the config result
+    // (This handles cases where the config analyzer already extracted it from
+    // .ruby-version, Gemfile, etc.)
+    if (configResult.version) {
       return configResult.version;
-    }
-
-    // Check for version in Gemfile
-    if (configResult && configResult.filePath && configResult.filePath.endsWith('Gemfile')) {
-      // Extract version from ruby directive
-      const versionMatch = configResult.version?.match(/ruby\s+["']([^"']+)["']/);
-      return versionMatch ? versionMatch[1] : undefined;
     }
 
     return undefined;
@@ -125,23 +122,60 @@ export class RubyDetector extends BaseLanguageDetector {
     // Call parent class detect method
     const result = await super.detect(projectPath, options);
     
-    // If confidence is below threshold, try additional detection methods
+    // Always try to detect runtime version from .ruby-version file if not already set
+    // This is important even when confidence is high, as config files might not contain version info
+    if (!result.runtimeVersion) {
+      // Try to detect Ruby version from .ruby-version file directly
+      const rubyVersionFile = FileUtils.joinPath(projectPath, '.ruby-version');
+      if (await fileExists(rubyVersionFile)) {
+        const content = await FileUtils.safeReadFile(rubyVersionFile);
+        if (content) {
+          result.runtimeVersion = content.trim();
+        }
+      }
+
+      // If still no version, try to detect from RVM
+      if (!result.runtimeVersion) {
+        const rvmVersion = await this.detectFromRVM(projectPath);
+        if (rvmVersion) {
+          result.runtimeVersion = rvmVersion;
+        }
+      }
+
+      // If still no version, try to detect from rbenv
+      if (!result.runtimeVersion) {
+        const rbenvVersion = await this.detectFromRbenv(projectPath);
+        if (rbenvVersion) {
+          result.runtimeVersion = rbenvVersion;
+        }
+      }
+
+      // If still no version, try to detect from chruby
+      if (!result.runtimeVersion) {
+        const chrubyVersion = await this.detectFromChruby(projectPath);
+        if (chrubyVersion) {
+          result.runtimeVersion = chrubyVersion;
+        }
+      }
+    }
+    
+    // If confidence is below threshold, try additional detection methods to boost confidence
     if (result.confidence < (options.confidenceThreshold || 0.3)) {
-      // Try to detect Ruby version from RVM
+      // Try to detect Ruby version from RVM to boost confidence
       const rvmVersion = await this.detectFromRVM(projectPath);
       if (rvmVersion) {
         result.runtimeVersion = rvmVersion;
         result.confidence = Math.max(result.confidence, 0.4);
       }
 
-      // Try to detect Ruby version from rbenv
+      // Try to detect Ruby version from rbenv to boost confidence
       const rbenvVersion = await this.detectFromRbenv(projectPath);
       if (rbenvVersion) {
         result.runtimeVersion = rbenvVersion;
         result.confidence = Math.max(result.confidence, 0.4);
       }
 
-      // Try to detect Ruby version from chruby
+      // Try to detect Ruby version from chruby to boost confidence
       const chrubyVersion = await this.detectFromChruby(projectPath);
       if (chrubyVersion) {
         result.runtimeVersion = chrubyVersion;

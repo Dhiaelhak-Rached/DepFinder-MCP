@@ -54,12 +54,32 @@ export async function getLanguageInfo(projectPath: string): Promise<{
     });
     
     // Find the result with highest confidence from valid results
+    // When confidences are equal, prefer results with runtimeVersion (indicates config file found)
     const bestResult = validResults.length > 0
       ? validResults.reduce((best, current) => {
-          return current.confidence > best.confidence ? current : best;
+          // If current has higher confidence, use it
+          if (current.confidence > best.confidence) return current;
+          // If confidences are equal, prefer the one with runtimeVersion (config file evidence)
+          if (current.confidence === best.confidence) {
+            // Prefer result with runtimeVersion (more reliable - comes from config files)
+            if (current.runtimeVersion && !best.runtimeVersion) return current;
+            if (!current.runtimeVersion && best.runtimeVersion) return best;
+            // If both or neither have runtimeVersion, prefer the one with framework (more specific)
+            if (current.framework && !best.framework) return current;
+            if (!current.framework && best.framework) return best;
+          }
+          return best;
         }, validResults[0])
       : results.reduce((best, current) => {
-          return current.confidence > best.confidence ? current : best;
+          // Same logic for fallback to all results
+          if (current.confidence > best.confidence) return current;
+          if (current.confidence === best.confidence) {
+            if (current.runtimeVersion && !best.runtimeVersion) return current;
+            if (!current.runtimeVersion && best.runtimeVersion) return best;
+            if (current.framework && !best.framework) return current;
+            if (!current.framework && best.framework) return best;
+          }
+          return best;
         }, results[0] || { language: 'unknown', confidence: 0 });
 
     // Format response
