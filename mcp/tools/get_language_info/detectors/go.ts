@@ -70,9 +70,11 @@ export class GoDetector extends BaseLanguageDetector {
 
     // Check for version in go.mod file
     if (configResult && configResult.filePath && configResult.filePath.endsWith('go.mod')) {
-      const goVersion = VersionUtils.extractVersion(configResult.details, /go\s+([0-9.]+)/);
-      if (goVersion) {
-        return goVersion;
+      if (configResult.details && typeof configResult.details === 'string') {
+        const goVersion = VersionUtils.extractVersion(configResult.details, /go\s+([0-9.]+)/);
+        if (goVersion) {
+          return goVersion;
+        }
       }
     }
 

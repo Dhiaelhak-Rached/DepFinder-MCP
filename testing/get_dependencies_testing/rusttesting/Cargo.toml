@@ -1,0 +1,16 @@
+[package]
+name = "rust-test-project"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+actix-web = "4.4"
+actix-rt = "2.8"
+
+[dev-dependencies]
+mockito = "1.0"
+tokio-test = "0.4"
+

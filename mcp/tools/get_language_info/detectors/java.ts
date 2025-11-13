@@ -73,15 +73,17 @@ export class JavaDetector extends BaseLanguageDetector {
     }
 
     // Check for version in pom.xml
-    if (configResult && configResult.language === 'java' && configResult.filePath.endsWith('pom.xml')) {
-      const pomVersion = VersionUtils.extractVersion(configResult.details, /java\.version\s*>\s*([^<]+)/);
-      if (pomVersion) {
-        return pomVersion;
+    if (configResult && configResult.language === 'java' && configResult.filePath && configResult.filePath.endsWith('pom.xml')) {
+      if (configResult.details && typeof configResult.details === 'string') {
+        const pomVersion = VersionUtils.extractVersion(configResult.details, /java\.version\s*>\s*([^<]+)/);
+        if (pomVersion) {
+          return pomVersion;
+        }
       }
     }
 
     // Check for version in build.gradle
-    if (configResult && configResult.language === 'java' && configResult.filePath.endsWith('build.gradle')) {
+    if (configResult && configResult.language === 'java' && configResult.filePath && configResult.filePath.endsWith('build.gradle')) {
       const gradleVersion = VersionUtils.extractVersion(configResult.details, /sourceCompatibility\s*=\s*['"]([^"']+)['"]/);
       if (gradleVersion) {
         return gradleVersion;

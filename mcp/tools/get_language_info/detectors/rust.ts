@@ -62,10 +62,12 @@ export class RustDetector extends BaseLanguageDetector {
     }
 
     // Check for version in Cargo.toml
-    if (configResult && configResult.language === 'rust' && configResult.filePath.endsWith('Cargo.toml')) {
-      const cargoVersion = VersionUtils.extractVersion(configResult.details, /rust-version\s*=\s*["']([^"']+)["']/);
-      if (cargoVersion) {
-        return cargoVersion;
+    if (configResult && configResult.language === 'rust' && configResult.filePath && configResult.filePath.endsWith('Cargo.toml')) {
+      if (configResult.details && typeof configResult.details === 'string') {
+        const cargoVersion = VersionUtils.extractVersion(configResult.details, /rust-version\s*=\s*["']([^"']+)["']/);
+        if (cargoVersion) {
+          return cargoVersion;
+        }
       }
     }
 
